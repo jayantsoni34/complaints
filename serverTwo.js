@@ -120,19 +120,16 @@ app.post('/tasks', async (req, res) => {
 app.get('/tasks', async (req, res) => {
   try {
     const page  = Math.max(parseInt(req.query.page)  || 1, 1);
-    const limit = Math.min(parseInt(req.query.limit) || 100, 1000); // cap at 1000
+
+    // ⬇️ CHANGED: default 500, cap 20000
+    const limit = Math.min(parseInt(req.query.limit) || 500, 20000);
     const skip  = (page - 1) * limit;
 
     const filter = buildFilter(req.query);
 
-    // Run count and data query in parallel
     const [total, tasks] = await Promise.all([
       Task.countDocuments(filter),
-      Task.find(filter)
-        .sort({ date: -1 })       // newest first
-        .skip(skip)
-        .limit(limit)
-        .lean(),                  // ⚡ plain objects = much faster
+      Task.find(filter).sort({ date: -1 }).skip(skip).limit(limit).lean(),
     ]);
 
     res.status(200).json({
